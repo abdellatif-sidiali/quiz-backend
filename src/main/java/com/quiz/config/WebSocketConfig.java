@@ -1,5 +1,6 @@
 package com.quiz.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -9,13 +10,31 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+	
+	@Value("${spring.rabbitmq.host}")
+    private String rabbitHost;
+
+    @Value("${spring.rabbitmq.port}")
+    private int rabbitPort;
+
+    @Value("${spring.rabbitmq.username}")
+    private String rabbitUser;
+
+    @Value("${spring.rabbitmq.password}")
+    private String rabbitPass;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable a simple in-memory message broker
+        // Enable rabbitMQ message broker
         // /topic for broadcasting to all subscribers
         // /queue for point-to-point messaging
-        config.enableSimpleBroker("/topic", "/queue");
+    	config.enableStompBrokerRelay("/topic", "/queue")
+        	.setRelayHost(rabbitHost)
+        	.setRelayPort(rabbitPort)
+        	.setClientLogin(rabbitUser)
+        	.setClientPasscode(rabbitPass)
+        	.setSystemLogin(rabbitUser)
+        	.setSystemPasscode(rabbitPass);
 
         // Prefix for messages from clients to server
         config.setApplicationDestinationPrefixes("/app");
