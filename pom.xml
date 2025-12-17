@@ -67,6 +67,13 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Reactor Netty (required for STOMP broker relay) -->
+		<dependency>
+    		<groupId>io.projectreactor.netty</groupId>
+    		<artifactId>reactor-netty</artifactId>
+		</dependency>
+
     </dependencies>
     
     <build>
