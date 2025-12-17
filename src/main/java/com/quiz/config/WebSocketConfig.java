@@ -22,6 +22,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Value("${spring.rabbitmq.password}")
     private String rabbitPass;
+    
+    @Value("${spring.rabbitmq.virtual-host}")
+    private String rabbitVhost;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -29,12 +32,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // /topic for broadcasting to all subscribers
         // /queue for point-to-point messaging
     	config.enableStompBrokerRelay("/topic", "/queue")
-        	.setRelayHost(rabbitHost)
-        	.setRelayPort(rabbitPort)
-        	.setClientLogin(rabbitUser)
-        	.setClientPasscode(rabbitPass)
-        	.setSystemLogin(rabbitUser)
-        	.setSystemPasscode(rabbitPass);
+        .setRelayHost(rabbitHost)
+        .setRelayPort(61613)
+        .setVirtualHost(rabbitVhost) // ⭐⭐⭐
+        .setClientLogin(rabbitUser)
+        .setClientPasscode(rabbitPass)
+        .setSystemLogin(rabbitUser)
+        .setSystemPasscode(rabbitPass);
+
 
         // Prefix for messages from clients to server
         config.setApplicationDestinationPrefixes("/app");
