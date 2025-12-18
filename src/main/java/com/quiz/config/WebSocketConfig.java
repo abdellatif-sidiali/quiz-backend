@@ -31,7 +31,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Enable rabbitMQ message broker
         // /topic for broadcasting to all subscribers
         // /queue for point-to-point messaging
-    	config.enableStompBrokerRelay("/topic", "/queue")
+    	//config.enableStompBrokerRelay("/topic", "/queue")
+    	config.enableStompBrokerRelay("/exchange", "/queue")
         .setRelayHost(rabbitHost)
         .setRelayPort(61613)
         .setVirtualHost(rabbitVhost) // ⭐⭐⭐
@@ -52,8 +53,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket endpoint that clients will connect to
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns("*");
+                //.withSockJS();
     }
 
     @Override

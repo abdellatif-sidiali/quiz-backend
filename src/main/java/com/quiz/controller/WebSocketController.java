@@ -26,6 +26,9 @@ public class WebSocketController {
     private final AnswerRepository answerRepository;
     private final ResponseRepository responseRepository;
 
+    // ✅ IMPORTANT : Utiliser l'exchange pour toutes les destinations
+    private static final String SESSION_EXCHANGE = "/exchange/amq.topic/session.";
+
     /**
      * Handle answer submission from participant
      */
@@ -51,7 +54,7 @@ public class WebSocketController {
             if (responseRepository.existsByParticipantIdAndQuestionId(
                     participant.getId(), question.getId())) {
                 log.warn("Participant {} already answered question {}", participant.getId(), question.getId());
-                sendErrorToParticipant(participant.getId(), "Already answered this question");
+                sendErrorToParticipant(sessionCode, participant.getId(), "Already answered this question");
                 return;
             }
 
@@ -66,7 +69,7 @@ public class WebSocketController {
             log.info("Response recorded: isCorrect={}, pointsEarned={}, totalScore={}",
                     response.getIsCorrect(), response.getPointsEarned(), updatedParticipant.getTotalScore());
 
-            // Send feedback to participant
+            // ✅ CORRECTION: Send feedback using exchange routing key
             Map<String, Object> feedback = new HashMap<>();
             feedback.put("type", "ANSWER_RESULT");
             feedback.put("questionId", question.getId());
@@ -74,7 +77,7 @@ public class WebSocketController {
             feedback.put("pointsEarned", response.getPointsEarned());
             feedback.put("totalScore", updatedParticipant.getTotalScore());
 
-            String destination = "/topic/session/" + sessionCode + "/participant/" + participant.getId();
+            String destination = SESSION_EXCHANGE + sessionCode + ".participant." + participant.getId();
             log.info("Sending feedback to: {}", destination);
             messagingTemplate.convertAndSend(destination, feedback);
 
@@ -85,7 +88,8 @@ public class WebSocketController {
             adminUpdate.put("questionId", question.getId());
             adminUpdate.put("count", responseCount);
 
-            messagingTemplate.convertAndSend("/topic/session/" + sessionCode + "/admin", adminUpdate);
+            // ✅ CORRECTION: Send to admin using exchange
+            messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode + ".admin", adminUpdate);
 
         } catch (Exception e) {
             log.error("Error processing answer: {}", e.getMessage(), e);
@@ -100,7 +104,7 @@ public class WebSocketController {
         message.put("type", "NEW_QUESTION");
         message.put("question", question);
 
-        messagingTemplate.convertAndSend("/topic/session/" + sessionCode, message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode, message);
         log.info("Broadcasted question {} to session {}", question.getId(), sessionCode);
     }
 
@@ -113,7 +117,7 @@ public class WebSocketController {
         message.put("questionId", questionId);
         message.put("correctAnswer", correctAnswer);
 
-        messagingTemplate.convertAndSend("/topic/session/" + sessionCode, message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode, message);
     }
 
     /**
@@ -124,7 +128,7 @@ public class WebSocketController {
         message.put("type", "SCOREBOARD_UPDATE");
         message.put("scoreboard", scoreboard);
 
-        messagingTemplate.convertAndSend("/topic/session/" + sessionCode, message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode, message);
     }
 
     /**
@@ -135,7 +139,7 @@ public class WebSocketController {
         message.put("type", "PARTICIPANT_JOINED");
         message.put("participant", participant);
 
-        messagingTemplate.convertAndSend("/topic/session/" + sessionCode, message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode, message);
     }
 
     /**
@@ -146,7 +150,7 @@ public class WebSocketController {
         message.put("type", "SESSION_STATUS");
         message.put("status", status);
 
-        messagingTemplate.convertAndSend("/topic/session/" + sessionCode, message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode, message);
     }
 
     /**
@@ -157,15 +161,19 @@ public class WebSocketController {
         message.put("type", "SESSION_ENDED");
         message.put("scoreboard", finalScoreboard);
 
-        messagingTemplate.convertAndSend("/topic/session/" + sessionCode, message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + sessionCode, message);
     }
 
-    private void sendErrorToParticipant(Long participantId, String error) {
+    private void sendErrorToParticipant(String sessionCode, Long participantId, String error) {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "ERROR");
         message.put("message", error);
 
-        // Send to specific participant would require session tracking
+        // ✅ CORRECTION: Send error using exchange
+        messagingTemplate.convertAndSend(
+            SESSION_EXCHANGE + sessionCode + ".participant." + participantId, 
+            message
+        );
         log.warn("Error for participant {}: {}", participantId, error);
     }
 }

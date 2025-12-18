@@ -18,6 +18,8 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final SimpMessagingTemplate messagingTemplate;
+    
+    private static final String SESSION_EXCHANGE = "/exchange/amq.topic/session.";
 
     @PostMapping("/create/{quizId}")
     public ResponseEntity<SessionDTO> createSession(@PathVariable Long quizId) {
@@ -49,7 +51,11 @@ public class SessionController {
         message.put("type", "PARTICIPANT_JOINED");
         message.put("participant", participant);
         message.put("participantCount", session.getParticipantCount());
-        messagingTemplate.convertAndSend("/topic/session/" + request.getSessionCode().toUpperCase(), message);
+        //messagingTemplate.convertAndSend("/topic/session/" + request.getSessionCode().toUpperCase(), message);
+        messagingTemplate.convertAndSend(
+                SESSION_EXCHANGE + request.getSessionCode().toUpperCase(),
+                message
+        );
 
         return ResponseEntity.ok(participant);
     }
@@ -62,7 +68,8 @@ public class SessionController {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "SESSION_STARTED");
         message.put("status", session.getStatus());
-        messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        //messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE  + session.getCode(), message);
 
         return ResponseEntity.ok(session);
     }
@@ -78,7 +85,8 @@ public class SessionController {
         message.put("question", question);
         message.put("questionIndex", index);
         message.put("totalQuestions", session.getTotalQuestions());
-        messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        //messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + session.getCode(), message);
 
         return ResponseEntity.ok(question);
     }
@@ -91,7 +99,8 @@ public class SessionController {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "QUESTION_ENDED");
         message.put("status", session.getStatus());
-        messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        //messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + session.getCode(), message);
 
         return ResponseEntity.ok(session);
     }
@@ -105,7 +114,8 @@ public class SessionController {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "SESSION_ENDED");
         message.put("scoreboard", scoreboard);
-        messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        //messagingTemplate.convertAndSend("/topic/session/" + session.getCode(), message);
+        messagingTemplate.convertAndSend(SESSION_EXCHANGE + session.getCode(), message);
 
         return ResponseEntity.ok(session);
     }
